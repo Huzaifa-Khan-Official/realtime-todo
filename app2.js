@@ -1,5 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+import { getDatabase, 
+    ref, 
+    set, 
+    onValue, 
+    push, 
+    remove, 
+    update 
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
 import {
     getAuth

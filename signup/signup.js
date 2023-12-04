@@ -1,6 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 
 import {
+  getDatabase,
+  ref,
+  set,
+  onValue,
+  push,
+  remove,
+  update
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+
+import {
   getAuth,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -25,7 +35,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
+const db = getDatabase();
+
 const provider = new GoogleAuthProvider();
 
 const auth = getAuth();
@@ -55,11 +67,14 @@ sbtn.addEventListener("click", () => {
       // email value  , password value
       .then(async (userCredential) => {
         const user = userCredential.user; // getting user from firebase
-        await setDoc(doc(db, "users", user.uid), {
-          // collection name,   unique id of user
-          ...userData, // setting array in a database
-          userid: user.uid, // also user id in the database
+        // user.uid "user unique id"
+
+        await set(ref(db, `/users/${user.uid}`), {
+          sname: sname.value,
+          semail: semail.value,
+          spassword: spassword.value,
         });
+
         location.href = "../login/login.html";
       })
       .catch((error) => {
@@ -90,15 +105,9 @@ googleSignInBtn.addEventListener("click", () => {
 
       const user = result.user;
 
-      let userData = {
+      await set(ref(db, `/users/${user.uid}`), {
         sname: user.displayName,
         semail: user.email,
-      };
-
-      await setDoc(doc(db, "users", user.uid), {
-        // collection name,   unique id of user
-        ...userData, // setting array in a database
-        userid: user.uid, // also user id in the database
       });
 
       localStorage.setItem("userUid", user.uid);
@@ -112,8 +121,8 @@ googleSignInBtn.addEventListener("click", () => {
       // The email of the user's account used.
       const email = error.customData.email;
       // The AuthCredential type that was used.
-        const credential = GoogleAuthProvider.credentialFromError(error);
-        
+      const credential = GoogleAuthProvider.credentialFromError(error);
+
       if (email) {
         errorPara.innerText = email;
         setTimeout(() => {
