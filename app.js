@@ -9,14 +9,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 
 import {
-    getFirestore,
-    doc,
-    getDoc,
-    updateDoc,
-    deleteDoc,
-    onSnapshot,
-    collection
-} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+    getDatabase,
+    ref,
+    set,
+    onValue,
+    push,
+    remove,
+    update
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDKbcJ3CVh0M6_MnGQjF2Iw_LmskUabrdE",
@@ -24,7 +24,9 @@ const firebaseConfig = {
     projectId: "fir-todo-5ed69",
     storageBucket: "fir-todo-5ed69.appspot.com",
     messagingSenderId: "70260766093",
-    appId: "1:70260766093:web:5ec9b1faef82084c2df9c4"
+    appId: "1:70260766093:web:5ec9b1faef82084c2df9c4",
+    databaseURL: "https://fir-todo-5ed69-default-rtdb.asia-southeast1.firebasedatabase.app/"
+
 };
 
 // Initialize Firebase
@@ -32,7 +34,7 @@ const app = initializeApp(firebaseConfig);
 
 const auth = getAuth();
 // Initialize Cloud Firestore and get a reference to the service
-const db = getFirestore(app);
+const db = getDatabase();
 
 let usersName;
 let usersEmail;
@@ -49,22 +51,23 @@ if (!localStorage.getItem("userUid")) {
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // give reference of the User
-        usersRef = doc(db, "users", user.uid);
-        // get the details of the user
-        const userSnap = await getDoc(usersRef);
-        // get user all data
-        const usersData = userSnap.data()
-        let userName = usersData.sname;
-        let nameFirstLetter = userName.slice(0, 1).toUpperCase();
-        let nameRemainLetters = userName.slice(1).toLowerCase();
-        userName = nameFirstLetter + nameRemainLetters
+        localStorage.setItem("userUid", user.uid);
+        const userRef = ref(db, `users/${user.uid}/`);
+        onValue(userRef, (snapshot) => {
+            const data = snapshot.val();
 
-        usersName = userName; // get the user name
-        usersEmail = usersData.semail; // get the user name 
+            let userName = data.sname;
+            let nameFirstLetter = userName.slice(0, 1).toUpperCase();
+            let nameRemainLetters = userName.slice(1).toLowerCase();
+            userName = nameFirstLetter + nameRemainLetters
 
-        usernameDiv.value = usersName
-        useremailDiv.value = usersEmail
+            usersName = userName; // get the user name
+            usersEmail = data.semail; // get the user name 
+
+            usernameDiv.value = usersName
+            useremailDiv.value = usersEmail
+        })
+
     } else {
         localStorage.removeItem("userUid")
         location.href = "../signup/signup.html";
@@ -75,6 +78,7 @@ const logout = document.querySelector("#logout");
 
 logout.addEventListener("click", () => {
     auth.signOut().then(() => {
+        localStorage.removeItem("userUid")
         location.href = "../signup/signup.html";
     })
 })
@@ -90,6 +94,7 @@ const successPara = document.querySelector('#successPara');
 const delBtn = document.querySelector('#delBtn');
 
 
+const userUid = localStorage.getItem("userUid");
 
 updBtn.addEventListener("click", async () => {
     if (usernameDiv.value == "") {
@@ -105,9 +110,14 @@ updBtn.addEventListener("click", async () => {
     } else {
         const upedName = usernameDiv.value;
         try {
-            await updateDoc(usersRef, {
+            const updNameRef = ref(db, `users/${userUid}/`);
+
+            const editTodo = {
                 sname: upedName
-            });
+            }
+
+            update(updNameRef, editTodo)
+
             successPara.innerText = "Successfully Updated!";
             setTimeout(() => {
                 successPara.innerHTML = "";
@@ -124,19 +134,6 @@ updBtn.addEventListener("click", async () => {
     }
 });
 
-const ids = [];
-
-const getTodos = () => {
-    onSnapshot(collection(db, localStorage.getItem("userUid")), (data) => {
-        data.docChanges().forEach((todo) => {
-            ids.push(todo.doc.id)
-        })
-    })
-}
-
-getTodos()
-
-
 
 delBtn.addEventListener("click", () => {
     Swal.fire({
@@ -149,35 +146,25 @@ delBtn.addEventListener("click", () => {
         confirmButtonText: "Yes, delete it!"
     }).then(async (result) => {
         if (result.isConfirmed) {
-            try {
-                await deleteDoc(doc(db, "users", localStorage.getItem("userUid"))); // deleted data of user from firestore.
-                for (var i = 0; i < ids.length; i++) {
-                    await deleteDoc(doc(db, localStorage.getItem("userUid"), ids[i]));
-                }
-                onAuthStateChanged(auth, async (currentUser) => {
-                    deleteUser(currentUser).then(async () => {
-                        localStorage.removeItem("userUid")
-                        location.href = "../signup/signup.html"
+            const delAccount = ref(db, `users/${userUid}`);
+            await remove(delAccount);
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    localStorage.removeItem("userUid")
+                    deleteUser(user).then(async () => {
+
                     }).catch((error) => {
-                        const errorCode = error.code;
-                        const errorMessage = errorCode.slice(5).toUpperCase();
-                        const errMessage = errorMessage.replace(/-/g, " ")
-                        errorPara.innerText = errMessage;
+                        errorPara.innerText = "Oops! Something went wrong.";
                         setTimeout(() => {
                             errorPara.innerHTML = "";
                         }, 3000);
                     });
-                })
-            } catch (error) {
-                const errorCode = error.code;
-                const errorMessage = errorCode.slice(5).toUpperCase();
-                const errMessage = errorMessage.replace(/-/g, " ")
-                errorPara.innerText = errMessage;
-                setTimeout(() => {
-                    errorPara.innerHTML = "";
-                }, 3000);
-            }
+                    console.log(user);
+                    location.href = "../signup/signup.html"
 
+                }
+            })
         }
     });
 })

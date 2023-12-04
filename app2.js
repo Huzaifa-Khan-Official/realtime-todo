@@ -182,6 +182,7 @@ const logout = document.querySelector("#logout");
 
 logout.addEventListener("click", () => {
     auth.signOut().then(() => {
+        localStorage.removeItem("userUid");
         location.href = "../signup/signup.html";
     })
 })

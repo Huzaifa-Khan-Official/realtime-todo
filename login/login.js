@@ -7,10 +7,10 @@ import {
     signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import {
-    getFirestore,
-    doc,
-    setDoc,
-} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+    getDatabase,
+    ref,
+    set
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDKbcJ3CVh0M6_MnGQjF2Iw_LmskUabrdE",
@@ -25,7 +25,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
-const db = getFirestore(app);
+const db = getDatabase();
 
 let lemail = document.querySelector("#lemail"); // get email to login user
 let lpassword = document.querySelector("#lpassword"); // get password to login user
@@ -68,15 +68,9 @@ googleSignInBtn.addEventListener("click", () => {
 
             const user = result.user;
 
-            let userData = {
+            await set(ref(db, `/users/${user.uid}`), {
                 sname: user.displayName,
                 semail: user.email,
-            };
-
-            await setDoc(doc(db, "users", user.uid), {
-                // collection name,   unique id of user
-                ...userData, // setting array in a database
-                userid: user.uid, // also user id in the database
             });
 
             localStorage.setItem("userUid", user.uid);
@@ -84,20 +78,10 @@ googleSignInBtn.addEventListener("click", () => {
             location.href = "../index.html";
         })
         .catch((error) => {
-            // Handle Errors here.
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            // The email of the user's account used.
-            // const email = error.customData.email;
-            // The AuthCredential type that was used.
-            const credential = GoogleAuthProvider.credentialFromError(error);
-            console.log(errorMessage);
-            // if (email) {
-            //     errorPara.innerText = email;
-            //     setTimeout(() => {
-            //         errorPara.innerHTML = "";
-            //     }, 3000);
-            // }
+            errorPara.innerText = "Oops! Something went wrong.";
+            setTimeout(() => {
+                errorPara.innerHTML = "";
+            }, 3000);
         });
 });
 
