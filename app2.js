@@ -25,7 +25,6 @@ const db = getDatabase();
 
 
 const auth = getAuth();
-console.log(auth);
 
 if (!localStorage.getItem("userUid")) {
     location.href = "../signup/signup.html";
@@ -47,15 +46,17 @@ const getPreviousTodos = async () => {
     const userRef = ref(db, `users/${userUid}/`);
     onValue(userRef, (snapshot) => {
         const data = snapshot.val();
-        if (data.todo) {
-            todoList.innerHTML = "";
-            delAll.style.display = "block";
-            
-            const allTodos = data.todo;
+        if (data) {
 
-            for (const key in allTodos) {
-                let crrTodoData = allTodos[key].todo;
-                todoList.innerHTML += `
+            if (data.todo && data) {
+                todoList.innerHTML = "";
+                delAll.style.display = "block";
+
+                const allTodos = data.todo;
+
+                for (const key in allTodos) {
+                    let crrTodoData = allTodos[key].todo;
+                    todoList.innerHTML += `
                 <li class="todo-item" id="">
                     <div class="listStyle">
                         <i class="fa-regular fa-circle"></i>
@@ -69,12 +70,14 @@ const getPreviousTodos = async () => {
                     </div>
                 </li>
                 `;
-            }
+                }
 
-        } else {
-            todoList.innerHTML = "";
-            delAll.style.display = "none";
+            } else {
+                todoList.innerHTML = "";
+                delAll.style.display = "none";
+            }
         }
+
     })
 }
 
